@@ -7,7 +7,7 @@ from nltk.tokenize import word_tokenize
 
 from flask import Flask
 from flask import render_template, request, jsonify
-from plotly.graph_objs import Bar
+from plotly.graph_objs import Bar, Scatter
 from sklearn.externals import joblib
 from sqlalchemy import create_engine
 
@@ -34,47 +34,61 @@ model = joblib.load("models/classifier.pkl")
 metrics = joblib.load("models/classifier_metrics.pkl")
 
 # index webpage displays cool visuals and receives user input text for model
-@app.route('/')
-@app.route('/index')
+@app.route('/',methods=['POST', 'GET'])
+@app.route('/index', methods=['POST', 'GET'])
 def index():
 
     # extract data needed for visuals
     # TODO: Below is an example - modify to extract data for your own visuals
-    genre_counts = df.groupby('genre').count()['message']
-    genre_names = list(genre_counts.index)
+    #genre_counts = df.groupby('genre').count()['message']
+    #genre_names = list(genre_counts.index)
+    category_names = list(df.columns[4:])
+    #category_roc_auc = list(metrics['roc_auc'])
 
-    category_df = df[df.columns[4:]].sum()/df.shape[0]
-    category_perc= list(category_df)
-    category_names = list(category_df.index)
-    category_roc_auc = list(metrics['roc_auc'])
+    def get_category_values(cat_str):
+        '''
+        cat_str: list of category names
+        returns x_val and y_val for plot
+        '''
+        cat_df = df[df.columns[df.columns.isin(cat_str)]].sum()/df.shape[0]
+        y_perc= list(cat_df)
+        y_auc = list(metrics[metrics.index.isin(cat_str)]['roc_auc'])
+        return  y_perc, y_auc
+
+    # Parse the POST request categories list
+    if (request.method == 'POST') and request.form:
+        #figures = return_figures(request.form)
+        categories_selected = []
+        for cat in request.form.lists():
+            categories_selected.append(cat[1][0])
+        y_perc, y_auc = get_category_values(categories_selected)
+        print(categories_selected)
+        print(y_perc)
+        print(y_auc)
+
+
+    # GET request returns all categories for initial page load
+    else:
+    #figures = return_figures()
+        categories_selected = []
+        for cat in category_names:
+            categories_selected.append(cat)
+        print(categories_selected)
+        y_perc, y_auc = get_category_values(categories_selected)
+        print(y_perc)
+        print(y_auc)
+        #print(all_categories)
+
 
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
-        {
-            'data': [
-                Bar(
-                    x=genre_names,
-                    y=genre_counts,
-                )
-            ],
-
-            'layout': {
-                'title': 'Distribution of Message Genres',
-                'yaxis': {
-                    'title': "Count",
-                },
-                'xaxis': {
-                    'title': "Genre"
-                }
-            }
-        },
 
         {
             'data': [
                 Bar(
-                    x=category_names,
-                    y=category_perc
+                    x=categories_selected,
+                    y=y_perc
                 )
             ],
 
@@ -92,8 +106,8 @@ def index():
         {
             'data': [
                 Bar(
-                    x=category_names,
-                    y=category_roc_auc
+                    x=categories_selected,
+                    y=y_auc
                 )
             ],
 
@@ -109,7 +123,27 @@ def index():
                     'title': "Category"
                 }
             }
-        }
+        },
+
+        {
+            'data': [
+                Scatter(
+                    x=y_perc,
+                    y=y_auc,
+                    mode="markers"
+                )
+            ],
+
+            'layout': {
+                'title': 'rel number versus classifier quality',
+                'yaxis': {
+                    'title': "auc"
+                },
+                'xaxis': {
+                    'title': "perc (count_category/nr_messages)"
+                }
+            }
+        },
 
 
 
@@ -121,7 +155,10 @@ def index():
     graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
 
     # render web page with plotly graphs
-    return render_template('master.html', ids=ids, graphJSON=graphJSON)
+    return render_template('master.html', ids=ids,
+        graphJSON=graphJSON,
+        all_categories=category_names,
+        categories_selected=categories_selected)
 
 
 # web page that handles user query and displays model results
