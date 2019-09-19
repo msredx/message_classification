@@ -31,18 +31,23 @@ df = pd.read_sql_table('messages', engine)
 
 # load model
 model = joblib.load("models/classifier.pkl")
-
+metrics = joblib.load("models/classifier_metrics.pkl")
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
 def index():
-    
+
     # extract data needed for visuals
     # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
-    
+
+    category_df = df[df.columns[4:]].sum()/df.shape[0]
+    category_perc= list(category_df)
+    category_names = list(category_df.index)
+    category_roc_auc = list(metrics['roc_auc'])
+
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
@@ -50,26 +55,71 @@ def index():
             'data': [
                 Bar(
                     x=genre_names,
-                    y=genre_counts
+                    y=genre_counts,
                 )
             ],
 
             'layout': {
                 'title': 'Distribution of Message Genres',
                 'yaxis': {
-                    'title': "Count"
+                    'title': "Count",
                 },
                 'xaxis': {
                     'title': "Genre"
                 }
             }
+        },
+
+        {
+            'data': [
+                Bar(
+                    x=category_names,
+                    y=category_perc
+                )
+            ],
+
+            'layout': {
+                'title': 'Relative number of messages per category',
+                'yaxis': {
+                    'title': "perc (count_category/nr_messages)"
+                },
+                'xaxis': {
+                    'title': "Category"
+                }
+            }
+        },
+
+        {
+            'data': [
+                Bar(
+                    x=category_names,
+                    y=category_roc_auc
+                )
+            ],
+
+            'layout': {
+                'title': 'classifier quality',
+                'yaxis': {
+                    'title': "area under the curve (roc): 0.5 is chance, 1 is perfect",
+                    'showgrid': True,
+                    'zeroline': False,
+                    'range': [0.5, 1]
+                },
+                'xaxis': {
+                    'title': "Category"
+                }
+            }
         }
+
+
+
+
     ]
-    
+
     # encode plotly graphs in JSON
     ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
     graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
-    
+
     # render web page with plotly graphs
     return render_template('master.html', ids=ids, graphJSON=graphJSON)
 
@@ -78,13 +128,13 @@ def index():
 @app.route('/go')
 def go():
     # save user input in query
-    query = request.args.get('query', '') 
+    query = request.args.get('query', '')
 
     # use model to predict classification for query
     classification_labels = model.predict([query])[0]
     classification_results = dict(zip(df.columns[4:], classification_labels))
 
-    # This will render the go.html Please see that file. 
+    # This will render the go.html Please see that file.
     return render_template(
         'go.html',
         query=query,

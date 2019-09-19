@@ -1,4 +1,5 @@
 import sys
+import os
 # import libraries
 import re
 import numpy as np
@@ -26,21 +27,21 @@ from sklearn.externals import joblib
 
 ## define some custom stopwords
 #full stopwords from nltk
-stopwords_a= ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 
-              "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 
-              'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 
-              'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 
-              'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 
+stopwords_a= ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
+              "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself',
+              'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her',
+              'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them',
+              'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this',
               'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were',
-              'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 
+              'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does',
               'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because',
-              'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 
+              'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about',
               'against', 'between', 'into', 'through', 'during', 'before', 'after',
               'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off',
               'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there',
               'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few',
               'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
-              'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 
+              'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will',
               'just', 'don', "don't", 'should', "should've", 'now', 'd', 'll', 'm',
               'o', 're', 've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't",
               'didn', "didn't", 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't",
@@ -49,36 +50,36 @@ stopwords_a= ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you'
               'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't"]
 
 #customized stopwords from nltk, verbs leftout
-stopwords_b= ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 
-              "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 
-              'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 
-              'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 
-              'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 
+stopwords_b= ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
+              "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself',
+              'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her',
+              'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them',
+              'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this',
               'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were',
               'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because',
-              'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 
+              'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about',
               'against', 'between', 'into', 'through', 'during', 'before', 'after',
               'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off',
               'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there',
               'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few',
               'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
-              'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 
+              'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will',
               'just','now', 'd', 'll', 'm',
               'o', ]
 
 #customized stopwords from nltk, questwords and "in" , "between", etc. left out
-stopwords_c= ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 
-              "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 
-              'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 
-              'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 
-              'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 
+stopwords_c= ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
+              "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself',
+              'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her',
+              'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them',
+              'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this',
               'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were',
-              'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 
+              'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does',
               'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because',
               'as', 'until', 'while', 'of', 'at', 'by', 'for', 'then', 'once',  'there',
               'all', 'any', 'both', 'each', 'few',
               'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
-              'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 
+              'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will',
               'just', 'don', "don't", 'should', "should've", 'now', 'd', 'll', 'm',
               'o', 're', 've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't",
               'didn', "didn't", 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't",
@@ -92,7 +93,7 @@ stopwords_d= ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you'
        "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself',
        'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her',
        'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them',
-       'their', 'theirs', 'themselves', 
+       'their', 'theirs', 'themselves',
        'this', 'that', "that'll", 'these', 'those','a', 'an', 'the', 'and',
        'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at',
        'by', 'for', 'with', 'about', 'against']
@@ -102,7 +103,7 @@ def load_data(database_filepath):
     # load data from database
     engine = create_engine('sqlite:///data/DisasterResponse.db')
     df = pd.read_sql('SELECT * FROM messages', con = engine)
-    X = df['message'] 
+    X = df['message']
     Y = df.drop(['genre', 'id', 'original', 'message'], axis=1)
     category_names = Y.columns.tolist()
     return X, Y, category_names
@@ -113,10 +114,10 @@ def tokenize(text):
     text: str that will be tokenized
     returns
     new_tokens: list of extracted tokens
-    '''  
+    '''
     #remove punctuation
     text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
-    #get tokens    
+    #get tokens
     tokens = word_tokenize(text)
     lemmatizer = WordNetLemmatizer()
     new_tokens = []
@@ -160,7 +161,7 @@ def build_model():
     #parameters = {'vect__max_df': (0.33, 0.66),
     #              'vect__ngram_range': [(1, 1),(1, 3)],
     #               'vect__stop_words': [stopwords_a, stopwords_b, stopwords_d]}
-    #cv = GridSearchCV(pipeline, param_grid = parameters, cv=3, n_jobs=1, 
+    #cv = GridSearchCV(pipeline, param_grid = parameters, cv=3, n_jobs=1,
     #                  verbose = 2, scoring = make_scorer(roc_auc_score))
     #return cv
     return pipeline
@@ -172,24 +173,24 @@ def evaluate_model(model, X_test, Y_test, category_names):
         runs a number of metrics on multioutput classifier results
         y_test: dataframe with true labels (binary)
         y_pred: numpy array with predicted labels (y_pred = XXXX.predict(X_test) from an sklearn estimator)
-        output: dataframe with accuracy, precision, f1, recall, tp, tn, fp, fn, roc_auc 
+        output: dataframe with accuracy, precision, f1, recall, tp, tn, fp, fn, roc_auc
         scores for each multioutput classifier
         '''
         accuracy, precision, recall, f1, support, tn, fp, fn, tp, roc_auc = [], [], [], [], [], [], [], [], [], []
         for i in range (len(y_pred[0,:])):
             try:
                 accuracy.append(accuracy_score(y_test.iloc[:,i],y_pred[:,i]))
-            except: 
+            except:
                 accuracy.append(np.nan)
             try:
                 precision.append(precision_score(y_test.iloc[:,i],y_pred[:,i]))
             except:
-                precision.append(np.nan)    
+                precision.append(np.nan)
             f1.append(f1_score(y_test.iloc[:,i],y_pred[:,i]))
             recall.append(recall_score(y_test.iloc[:,i],y_pred[:,i]))
             confusion_mat = confusion_matrix(y_test.iloc[:,i],y_pred[:,i])
             #see https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html
-            tn_, fp_, fn_, tp_ = confusion_mat.ravel() 
+            tn_, fp_, fn_, tp_ = confusion_mat.ravel()
             tn.append(tn_)
             fp.append(fp_)
             fn.append(fn_)
@@ -208,37 +209,41 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
     Y_pred_test=model.predict(X_test)
     test_metrics=get_metrics(Y_test,Y_pred_test)
-    #we take the mean of all metrics, because we want all predictors to be good, 
-    #irrespective of their relative occurance. This is equivalent to macro-averaging of scores 
-    # for the binary multilabel case 
+    #we take the mean of all metrics, because we want all predictors to be good,
+    #irrespective of their relative occurance. This is equivalent to macro-averaging of scores
+    # for the binary multilabel case
     print("metrics for test set:")
     print(test_metrics.mean())
     print("metrics for test set, each category")
     print(test_metrics)
+    return test_metrics
 
-def save_model(model, model_filepath):
-    joblib.dump(model, model_filepath) 
-    pass
+def save_model(model, metrics, model_filepath, metrics_filepath):
+    joblib.dump(model, model_filepath)
+    joblib.dump(metrics, metrics_filepath)
 
 
 def main():
     if len(sys.argv) == 3:
-        database_filepath, model_filepath = sys.argv[1:]
+        database_filepath, model_path = sys.argv[1:]
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
         X, Y, category_names = load_data(database_filepath)
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
-        
+
         print('Building model...')
         model = build_model()
-        
+
         print('Training model...')
         model.fit(X_train, Y_train)
-        
+
         print('Evaluating model...')
-        evaluate_model(model, X_test, Y_test, category_names)
+        metrics = evaluate_model(model, X_test, Y_test, category_names)
+
+        metrics_filepath = os.path.join(model_path,'classifier_metrics.pkl')
+        model_filepath = os.path.join(model_path,'classifier.pkl')
 
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
-        save_model(model, model_filepath)
+        save_model(model, metrics, model_filepath, metrics_filepath)
 
         print('Trained model saved!')
 
