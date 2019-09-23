@@ -15,7 +15,7 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
 from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import make_scorer
 from sklearn.multioutput import MultiOutputClassifier
@@ -24,7 +24,8 @@ from sklearn.metrics import confusion_matrix, accuracy_score, f1_score, precisio
 from sklearn.metrics import classification_report
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.externals import joblib
-
+import nltk
+nltk.download(['punkt', 'wordnet','stopwords'])
 ## define some custom stopwords
 #full stopwords from nltk
 stopwords_a= ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
@@ -118,7 +119,7 @@ def tokenize(text):
     text: str that will be tokenized
 
     returns new_tokens (list of extracted tokens)
-    '''  
+    '''
 
     #remove punctuation
     text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
@@ -159,21 +160,40 @@ class StartingVerbExtractor(BaseEstimator, TransformerMixin):
 
 def build_model():
     '''
-    define pipeline and/or gridsearch object for feature extraction and trainig classifier 
+    define pipeline and/or gridsearch object for feature extraction and trainig classifier
     returns pipeline or gridsearch object
-    '''  
+    '''
     pipeline = Pipeline([
-        ('vect', CountVectorizer(tokenizer=tokenize)),
-        ('tfidf', TfidfTransformer()),
-        ('clf', MultiOutputClassifier(AdaBoostClassifier()))
+        ('features', FeatureUnion([
+            ('tfidf_pipeline', Pipeline([
+                ('vect', CountVectorizer(tokenizer=tokenize)),
+                ('tfidf', TfidfTransformer())
+            ])),
+            ('starting_verb', StartingVerbExtractor()),
+        ])),
+        ('clf', MultiOutputClassifier(SGDClassifier()))
     ])
-    #parameters = {'vect__max_df': (0.33, 0.66),
-    #              'vect__ngram_range': [(1, 1),(1, 3)],
-    #               'vect__stop_words': [stopwords_a, stopwords_b, stopwords_d]}
-    #cv = GridSearchCV(pipeline, param_grid = parameters, cv=3, n_jobs=1,
-    #                  verbose = 2, scoring = make_scorer(roc_auc_score))
-    #return cv
-    return pipeline
+
+#parameters = {'features__tfidf_pipeline__vect__max_df': (0.6, 0.8, 1),
+#              'features__tfidf_pipeline__vect__ngram_range': ((1,1),(1, 2)),
+#              'features__tfidf_pipeline__vect__stop_words': (stopwords_a,stopwords_b),
+#              'features__tfidf_pipeline__vect__max_features': (None, 10000),
+#              'clf__estimator__max_iter': (50,),
+#              'clf__estimator__alpha': (0.00001,),
+#              'clf__estimator__penalty': ('elasticnet','l2')}
+
+    parameters = {'features__tfidf_pipeline__vect__max_df': (0.6,),
+              'features__tfidf_pipeline__vect__ngram_range': ((1, 2),),
+              'features__tfidf_pipeline__vect__stop_words': (stopwords_a,),
+              'features__tfidf_pipeline__vect__max_features': (None,),
+              'clf__estimator__max_iter': (50,),
+              'clf__estimator__alpha': (0.00001,),
+              'clf__estimator__penalty': ('elasticnet',)}
+    cv = GridSearchCV(pipeline, param_grid = parameters, cv=5, n_jobs=1,
+                      verbose = 2, scoring = make_scorer(roc_auc_score))
+
+    return cv
+    #return pipeline
 
 def evaluate_model(model, X_test, Y_test, category_names):
     '''
@@ -186,7 +206,7 @@ def evaluate_model(model, X_test, Y_test, category_names):
         y_test: dataframe with true labels (binary)
         y_pred: numpy array with predicted labels (y_pred = XXXX.predict(X_test) from an sklearn estimator)
 
-        returns: dataframe with accuracy, precision, f1, recall, tp, tn, fp, fn, roc_auc 
+        returns: dataframe with accuracy, precision, f1, recall, tp, tn, fp, fn, roc_auc
 
 
 
