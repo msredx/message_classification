@@ -44,15 +44,22 @@ class StartingVerbExtractor(BaseEstimator, TransformerMixin):
         return pd.DataFrame(X_tagged)
 
 def tokenize(text):
+    '''
+    simple tokenization: keep only chars and numbers, convert to lowercase, tokenize and lemmatize using nltk
+    text: str that will be tokenized
+
+    returns new_tokens (list of extracted tokens)
+    '''
+
+    #remove punctuation
+    text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
+    #get tokens
     tokens = word_tokenize(text)
     lemmatizer = WordNetLemmatizer()
-
-    clean_tokens = []
+    new_tokens = []
     for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
+        new_tokens.append(lemmatizer.lemmatize(tok).strip())
+    return new_tokens
 
 # load data
 engine = create_engine('sqlite:///data/DisasterResponse.db')
