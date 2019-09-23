@@ -1,5 +1,6 @@
 import json
 import plotly
+import re
 import pandas as pd
 
 from nltk.stem import WordNetLemmatizer
@@ -98,9 +99,9 @@ def index():
         for cat in request.form.lists():
             categories_selected.append(cat[1][0])
         y_perc, y_auc = get_category_values(categories_selected)
-        print(categories_selected)
-        print(y_perc)
-        print(y_auc)
+        #print(categories_selected)
+        #print(y_perc)
+        #print(y_auc)
 
 
     # GET request returns all categories for initial page load
@@ -109,10 +110,10 @@ def index():
         categories_selected = []
         for cat in category_names:
             categories_selected.append(cat)
-        print(categories_selected)
+        #print(categories_selected)
         y_perc, y_auc = get_category_values(categories_selected)
-        print(y_perc)
-        print(y_auc)
+        #print(y_perc)
+        #print(y_auc)
         #print(all_categories)
 
 
