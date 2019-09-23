@@ -5,6 +5,12 @@ from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
+    '''
+    loads and merges datasets.
+    messages_filepath: path to csv file containing messages
+    categories_filepath: path to csv file containing categories
+    returns a dataframe
+    '''
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
     #merge
@@ -14,6 +20,11 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
+    '''
+    cleans the merged dataset to prepare for machine learning
+    df: merged dataframe
+    returns a dataframe
+    '''
     # create a dataframe of the 36 individual category columns
     categories = df['categories'].str.split(';', expand = True)
     # get list of new column names
@@ -59,9 +70,11 @@ def clean_data(df):
 
 
 def save_data(df, database_filename):
+    '''
+    saves dataframe to sql database
+    '''
     engine = create_engine('sqlite:///'+database_filename)
-    df.to_sql('messages', engine, index=False)
-    pass  
+    df.to_sql('messages', engine, index=False)  
 
 
 def main():

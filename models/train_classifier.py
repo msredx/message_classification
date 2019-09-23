@@ -99,7 +99,11 @@ stopwords_d= ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you'
 
 
 def load_data(database_filepath):
-    # load data from database
+    '''
+    loads data from sql-database
+    database_filepath: path to sqlite database
+    returns X (message text), Y(multiple binarized categories), list of category names
+    '''
     engine = create_engine('sqlite:///data/DisasterResponse.db')
     df = pd.read_sql('SELECT * FROM messages', con = engine)
     X = df['message'] 
@@ -111,8 +115,7 @@ def tokenize(text):
     '''
     simple tokenization: keep only chars and numbers, convert to lowercase, tokenize and lemmatize using nltk
     text: str that will be tokenized
-    returns
-    new_tokens: list of extracted tokens
+    returns new_tokens (list of extracted tokens)
     '''  
     #remove punctuation
     text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
@@ -152,6 +155,10 @@ class StartingVerbExtractor(BaseEstimator, TransformerMixin):
 
 
 def build_model():
+    '''
+    define pipeline and/or gridsearch object for feature extraction and trainig classifier 
+    returns pipeline or gridsearch object
+    '''  
     pipeline = Pipeline([
         ('vect', CountVectorizer(tokenizer=tokenize)),
         ('tfidf', TfidfTransformer()),
@@ -166,13 +173,16 @@ def build_model():
     return pipeline
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    ### todo integrate category names
+    '''
+    evaluate the model
+    prints evaluation metrics
+    '''
     def get_metrics (y_test, y_pred):
         '''
         runs a number of metrics on multioutput classifier results
         y_test: dataframe with true labels (binary)
         y_pred: numpy array with predicted labels (y_pred = XXXX.predict(X_test) from an sklearn estimator)
-        output: dataframe with accuracy, precision, f1, recall, tp, tn, fp, fn, roc_auc 
+        returns: dataframe with accuracy, precision, f1, recall, tp, tn, fp, fn, roc_auc 
         scores for each multioutput classifier
         '''
         accuracy, precision, recall, f1, support, tn, fp, fn, tp, roc_auc = [], [], [], [], [], [], [], [], [], []
@@ -217,6 +227,9 @@ def evaluate_model(model, X_test, Y_test, category_names):
     print(test_metrics)
 
 def save_model(model, model_filepath):
+    '''
+    save model and metrics to pkl file
+    '''
     joblib.dump(model, model_filepath) 
     pass
 
