@@ -16,7 +16,7 @@ def load_data(messages_filepath, categories_filepath):
     #merge
     df = messages.merge(categories, on = 'id')
     return df
-    
+
 
 
 def clean_data(df):
@@ -38,20 +38,20 @@ def clean_data(df):
         # convert column from string to numeric
         categories[column] = pd.to_numeric(categories[column])
     # in column related, replace 2 with 1
-    categories['related'].replace(2,1, inplace=True)
+    categories['related'].replace(2,0, inplace=True)
     #remove "child_alone" column because there is no positive case
     categories.drop(columns=['child_alone'], inplace=True)
     # drop the original categories column from `df`
     df.drop(columns='categories',inplace=True)
     # concatenate the original dataframe with the new `categories` dataframe
     df = pd.concat([df,categories],axis=1)
-    
+
     # check number of duplicates
     #convert message and original column to string
     df['original'] = df['original'].astype(str)
     df['message'] = df['message'].astype(str)
     # drop duplicates in 'message'
-    #df_dupl_removed = 
+    #df_dupl_removed =
     df_dupl = df[df.duplicated(subset='message')]
     print(f"removing {df_dupl.shape[0]} duplicates in columns 'message'")
     df_dupl_removed = df.copy()
@@ -74,7 +74,7 @@ def save_data(df, database_filename):
     saves dataframe to sql database
     '''
     engine = create_engine('sqlite:///'+database_filename)
-    df.to_sql('messages', engine, index=False)  
+    df.to_sql('messages', engine, index=False)
 
 
 def main():
@@ -88,12 +88,12 @@ def main():
 
         print('Cleaning data...')
         df = clean_data(df)
-        
+
         print('Saving data...\n    DATABASE: {}'.format(database_filepath))
         save_data(df, database_filepath)
-        
+
         print('Cleaned data saved to database!')
-    
+
     else:
         print('Please provide the filepaths of the messages and categories '\
               'datasets as the first and second argument respectively, as '\
